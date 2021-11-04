@@ -34,21 +34,17 @@ Clone this repo:
 
 3. Activate conda environment:
 
-`conda activate genra-ltea`
+`conda activate genra-py`
 
-4. Add this conda environment as a kernel to jupyter-lab:
+4. GenRA (genra-py) will need to be installed in this activated environment with:
+`pip install genra`
 
-`ipython kernel install --user --name=genra-ltea`
-
-5. Copy the notebooks/dotenv file to notebooks/.env and edit the environemnt variables (replace path_to_top with the correct directory name):
-
-`TOP=path_to_top/genra-ltea SRC=path_to_top/genra-ltea/src DAT=path_to_top/genra-ltea/data FIG=path_to_top/genra-ltea/figs`
+5. Open your Jupyter Notebook In the terminal, execute `jupyter notebook`. 
+Then open the notebook `001-tt-genra-ltea-2020` to start coding.
 
 Further details are provided in the genra-py user manual 
 
 `notebooks/manual/001-genra-py-user-manual.ipynb`
-
-
 
 
 
