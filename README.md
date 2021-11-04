@@ -30,7 +30,7 @@ Clone this repo:
 
 2. Go into genra-py directory and create genra-py conda environment:
 
-`conda create -f condaenv.yml`
+`conda env create -f condaenv.yml`
 
 3. Activate conda environment:
 
