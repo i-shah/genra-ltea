@@ -1,7 +1,7 @@
 GenRA-LTEA
 ==============================
 
-Generalised Read Across (GenRA) in Python: Proof-of-Concept (LTEA Hepa
+Generalised Read Across (GenRA) in Python: Proof-of-Concept (LTEA)
 
 Read-Across is extensively used to fill data gaps for compounds that have not been evaluated. We created Genralised Read-Across (GenRA) as a computational toxicology tool to simulate the manual reasoning of a human expert using similarity-weighted activity.
 
