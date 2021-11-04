@@ -1,0 +1,107 @@
+---
+title: "Generation of Summary Tables LTEA"
+author: "Tia Alexis Tate"
+date: "8/17/2020"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Packages
+```{r}
+library(dplyr)
+library(tidyverse)
+
+```
+
+Data
+```{r}
+mg<-read.csv(file = "global_perf_mg_all_allcombs_pivot_auc_10nn.csv", header = TRUE)
+mg<-global_perf_mg_all_allcombs_pivot_auc_10nn
+```
+
+Calculate mean, sd, and number/percent greater than 0.70 using aggregate and mapply to merge
+```{r}
+tox_group<-(sub("_.*", "", mg$tox)) #remove all excess information to aggregate by study type
+
+##calculate the mean and round to 3 digits 
+mg_mean<-aggregate(mg[,2:4], list(tox_group),
+                mean, na.rm=TRUE)
+mg_mean1<-mg_mean[-1] %>%
+  mutate_if(is.numeric, round, digits = 2)
+#row.names(mg_mean1)<-mg_mean$Group.1
+
+##calculate the SD and round to 3 digits
+mg_sd<-aggregate(mg[,2:4], list(tox_group),
+                 sd, na.rm=TRUE)
+mg_sd1<-mg_sd[-1] %>%
+  mutate_if(is.numeric, round, digits = 2)
+#row.names(mg_sd1)<-mg_sd$Group.1
+
+##Merge the mean and sd into on cell for each descriptor, turn object to dataframes and import row names
+mg_summary<- mapply(function(x, y){paste(x,y, sep = " | ")}, mg_mean1, mg_sd1)
+mg_summary <- as.data.frame(mg_summary)
+row.names(mg_summary)<-mg_mean$Group.1
+library(data.table)
+setnames(mg_summary, old =c("gene", "mrgn", "gene.mrgn"), new = c("Gene(B)", "Mrgn(C)", "MG(CB")) ##change column names 
+mg_summary
+```
+
+```{r}
+
+##Calculate number of instances where each descriptor AUC values is greater than .70 
+mg_gt0.70<-aggregate(mg[,2:4], list(tox_group), function(x) sum(x > 0.70, na.rm = TRUE))
+mg_gt0.70_1<-mg_gt0.70[-1] %>%
+  mutate_if(is.numeric, round, digits = 2)
+#row.names(mg_gt0.70_1)<-mg_gt0.70$Group.1
+
+##Calculate percent of instances where each descriptor AUC values is greater than .70 
+mg_gt0.70per<-aggregate(mg[,2:4], list(tox_group), function(x) (sum(x > 0.70, na.rm = TRUE)/length(x))*100)
+mg_gt0.70per_1<-mg_gt0.70per[-1] %>%
+  mutate_if(is.numeric, round, digits = 2)
+#row.names(mg_gt0.70per_1)<-mg_gt0.70per$Group.1
+
+##Merge the number and percent of instances > 0.70 into on cell for each descriptor, turn object to dataframes and import row names
+mg_summary2<- mapply(function(x, y){paste(x,y, sep = " | ")}, mg_gt0.70_1, mg_gt0.70per_1)
+mg_summary2 <- as.data.frame(mg_summary2)
+row.names(mg_summary2)<-mg_gt0.70$Group.1
+setnames(mg_summary2, old =c("gene", "mrgn", "gene.mrgn"), new = c("B>=70", "C>=70", "CB>=70"))
+mg_summary2
+```
+
+```{r}
+##Merges the two summary tables, renames row.names column to "Study" 
+mg_summary_fin<-merge(mg_summary, mg_summary2, by= "row.names", all.x = TRUE, all.y = TRUE)
+colnames(mg_summary_fin)[1]<-"Study"
+mg_summary_fin
+
+write.csv(mg_summary_fin, "C:/Users/ttate/OneDrive - Environmental Protection Agency (EPA)/ltea/data_outputs/global_perf_mg_all_allcombs_auc_10nn_summary_table.csv")
+
+```
+
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

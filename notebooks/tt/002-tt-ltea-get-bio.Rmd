@@ -1,0 +1,145 @@
+---
+title: "retrieve level 5 and 6 ltea data from tcpl"
+auther: "Tia Alexis Tate"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+setwd("/share/home3/ttate/ltea_R/ltea_data_retrival")
+```
+
+TCPL packages and libraries
+```{r}
+set.seed(100000)
+install.packages("tcpl")
+library(tcpl)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(xlsx)
+```
+
+Configuring tcpl package to retrieve data--Change driver in tcpl to MySQL and DB to invitrodb
+```{r}
+tcplConf(drvr = 'MySQL',
+         user = '_dataminer',
+         pass = 'pass',
+         host = 'ccte-mysql-res.epa.gov',
+         db = 'invitrodb')
+```
+
+Find the LTEA assay summary information
+```{r}
+#find assay component endpoint names associated with ltea and the aeids associated with those names
+ltea = tcplGetAeid("LTEA")
+
+#load assay source IDS
+tcplLoadAsid() #asid=9 for LTEA
+
+#Query assays by assay ID and create a data.table containing assay id and name information 
+ltea.assays <- tcplLoadAeid(fld='asid', val = 9)
+
+aeids<-ltea.assays$aeid
+
+#load mulptle concentration (mc) table for level 5 and level 6 from query of tcpl database and map annotation info
+mc5 <- tcplPrepOtpt(tcplLoadData(lvl = 5, type = 'mc', 
+                                  fld = 'aeid', val = aeids))
+
+mc6<-tcplPrepOtpt(tcplLoadData(lvl = 6, type = 'mc', 
+                                fld = 'aeid', val = aeids))
+
+mc7<-tcplPrepOtpt(tcplLoadData(lvl = 7, type = 'mc',
+                               fld = 'aeid', val = aeids ))
+
+write.csv(mc5,'mc5_ltea_data.csv')
+write.csv(mc6,'mc6_ltea_data.csv')
+write.csv(mc7,'mc7_ltea_data.csv')
+```
+
+mc5 controls with NA for dsstox sid --- export to determine dsstox sid and casn using comptox based on spid for all controls(this is the chnm)
+```{r}
+mc5$spid<-sub("Chenodeoxycholic", "Chenodeoxycholic Acid", mc5$spid)
+
+mc5_NA<-mc5[is.na(mc5$dsstox_substance_id)]
+write.csv(mc5_NA, "Chemicals with NO Dsstox ID.csv") 
+
+#after generating file with chemical names, dsstoxsids, and casn for controls with NA's in the Dashboard, new mc5 file was generated in excel 
+mc5_new<-read.csv("/share/home3/ttate/ltea_R/ltea_data_retrival/mc5_ltea_data_updated.csv", header = T)
+mc5_new$X<-NULL
+head(mc5_new)
+```
+
+
+Replicates--There are 9 chemicals with 3 replicated per chemical, merge these replicates keeping the max hitc value
+```{r}
+#level 5 replicates
+mc5_replicates<- mc5 %>%
+  select(casn, chnm, dsstox_substance_id, aenm, hitc) %>%
+  filter(dsstox_substance_id %in% c("DTXSID0032493","DTXSID0032520", "DTXSID0034695","DTXSID3031864", "DTXSID5020154", "DTXSID5032498", "DTXSID7020182", "DTXSID8024238", "DTXSID8035180")) %>%
+  group_by(dsstox_substance_id, aenm) %>%
+  summarise_each(funs(max(na.omit(.))))
+
+
+#remove replicates from main data file 
+mc5_sub<-mc5_new[! mc5_new$dsstox_substance_id %in% mc5_replicates$dsstox_substance_id, ]
+
+```
+
+Assay Level Table- pivoted hitc table at assay level (_up , _down seperate)
+```{r}
+mc5_assay<- mc5_sub %>%
+  select(casn, chnm, dsstox_substance_id, aenm, hitc) %>%
+  bind_rows(mc5_replicates) %>%
+  filter(hitc != -1) %>%
+  group_by(chnm, aenm) %>%
+  spread(key = aenm, value = hitc)
+
+
+#make NA's blank
+mc5_assay<-sapply(mc5_assay, as.character)
+mc5_assay[is.na(mc5_assay)]<-""
+head(mc5_assay)
+dim(mc5_assay)
+
+write.xlsx(mc5_assay,'mc5_assay_ltea_data.xlsx')
+
+```
+
+
+Gene level
+```{r}
+mc5_gene<- mc5_sub %>%
+  select(casn, chnm, dsstox_substance_id, aenm, hitc) %>%
+  bind_rows(mc5_replicates) %>%
+  filter(hitc != -1)
+  
+
+mc5_gene$aenm <-sub("LTEA_HepaRG_", "", mc5_gene$aenm) #removing parts of the Assay/ gene names to make merging my clear
+mc5_gene$aenm <-sub("_.*", "", mc5_gene$aenm)
+head(mc5_gene)
+
+mc5_gene<-mc5_gene %>%
+  group_by(chnm, aenm) %>%
+  summarise_each(funs(max(na.omit(.)))) %>%
+  spread(key = aenm, value = hitc)
+
+  
+#make NA's blank
+mc5_gene<-sapply(mc5_gene, as.character)
+mc5_gene[is.na(mc5_gene)]<-""
+head(mc5_gene)
+dim(mc5_gene) 
+
+write.xlsx(mc5_gene,'mc5_gene_ltea_data.xlsx')
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
