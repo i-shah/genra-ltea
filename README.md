@@ -39,7 +39,7 @@ Clone this repo:
 4. GenRA (genra-py) will need to be installed in this activated environment with:
 `pip install genra`
 
-5. Open your Jupyter Notebook In the terminal, execute `jupyter notebook`. 
+5. Open your Jupyter Notebook In the terminal, execute `jupyter notebook` {note: this may neet to be installed in environment.} 
 Then open the notebook `001-tt-genra-ltea-2020` to start coding.
 
 Further details are provided in the genra-py user manual 
