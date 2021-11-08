@@ -28,7 +28,7 @@ Clone this repo:
 
 `git clone https://github.com/i-shah/genra-ltea.git`
 
-2. Go into genra-py directory and create genra-py conda environment:
+2. Go into genra-ltea directory and create genra-py conda environment:
 
 `conda env create -f condaenv.yml`
 
